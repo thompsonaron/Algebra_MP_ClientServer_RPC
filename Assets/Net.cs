@@ -15,6 +15,18 @@ public static class Net
         client.Connect();
     }
 
+    public static void sendPacket(NetPacket packet)
+    {
+        // better way: using a seriallizator
+        UnityEngine.Debug.Log(packet.messageType + packet.data);
+        client.Send((int)packet.messageType + packet.data);
+    }
+
+    public static void guessTheNumber(int number)
+    {
+
+    }
+
     private static void Client_OnOpen(object sender, System.EventArgs e)
     {
         UnityEngine.Debug.Log("onopen");
@@ -27,7 +39,7 @@ public static class Net
 
         UnityEngine.Debug.Log(packet.messageType);
 
-        lock (packet)
+        lock (receiving)
         {
             receiving.Add(packet);
         }
@@ -60,10 +72,13 @@ public static class Net
 // rest (2-n). char = data
 public enum MessageType
 {
-    PlayerJoin, // client -> server = 0
-    StartTheGame, // server -> client = 1
-    GeneratedNumber,// server -> client
-
+    PlayerJoin,     // client -> server = 0
+    StartTheGame,   // server -> client = 1
+    GuessingNumber, // client -> server = 2
+    PlayerWon,      // server -> client = 3
+    PlayerLost,     // server -> client = 4
+    GoBigger,       // server -> client = 5
+    GoSmaller       // server -> client = 6
 }
 
 public class NetPacket
