@@ -50,6 +50,11 @@ public static class Net
         //}
     }
 
+    public static void closeConnection()
+    {
+        client.Close();
+    }
+
     public static List<NetPacket> doUpdate()
     {
         List<NetPacket> output = new List<NetPacket>(receiving);

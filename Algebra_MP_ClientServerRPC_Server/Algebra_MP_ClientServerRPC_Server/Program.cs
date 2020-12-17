@@ -32,10 +32,21 @@ namespace Algebra_MP_ClientServerRPC_Server
             static string[] players = new string[2];
             static int currentPlayerIndex; // has default value zero
 
+            static bool matchEnded;
+
             protected override void OnOpen()
             {
                 Console.WriteLine("Joined: " + ID);
                 base.OnOpen();
+            }
+
+            protected override void OnClose(CloseEventArgs e)
+            {
+                if (!matchEnded)
+                {
+                    playerWon(players[getIndexOfEnemy(ID)]);
+                }
+                base.OnClose(e);
             }
 
             protected override void OnMessage(MessageEventArgs e)
@@ -122,8 +133,9 @@ namespace Algebra_MP_ClientServerRPC_Server
                 return -1;
             }
 
-            void playerWon(string id)
+            void playerWon(string id, bool sendALose = true)
             {
+                matchEnded = true;
                 for (int i = 0; i < players.Length; i++)
                 {
                     if (players[i] == id)
@@ -131,7 +143,7 @@ namespace Algebra_MP_ClientServerRPC_Server
                         // win
                         Sessions.SendTo(getMessageType(MessageType.PlayerWon), players[i]);
                     }
-                    else
+                    else if(sendALose)
                     {
                         // loss
                         Sessions.SendTo(getMessageType(MessageType.PlayerLost), players[i]);

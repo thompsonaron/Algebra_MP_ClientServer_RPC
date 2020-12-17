@@ -22,4 +22,9 @@ public class Menu : MonoBehaviour
             }
         }
     }
+
+    private void OnApplicationQuit()
+    {
+        Net.closeConnection();
+    }
 }
