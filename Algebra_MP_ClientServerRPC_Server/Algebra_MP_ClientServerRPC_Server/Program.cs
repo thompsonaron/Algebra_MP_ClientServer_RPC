@@ -27,6 +27,7 @@ namespace Algebra_MP_ClientServerRPC_Server
         {
             static Random random = new Random();
             static int generatedNumber;
+            static DateTime[] lastSentNumber = new DateTime[2];
 
             static string[] players = new string[2];
             static int currentPlayerIndex; // has default value zero
@@ -46,8 +47,10 @@ namespace Algebra_MP_ClientServerRPC_Server
 
                 if (messageType == MessageType.PlayerJoin)
                 {
-                    // ...
-                    players[currentPlayerIndex++] = ID;
+                    lastSentNumber[currentPlayerIndex] = DateTime.MinValue;
+                    players[currentPlayerIndex] = ID;
+                    currentPlayerIndex++;
+
                     if (currentPlayerIndex == 2) // meaning that if two players joined
                     {
                         generatedNumber = random.Next(100);
@@ -62,34 +65,78 @@ namespace Algebra_MP_ClientServerRPC_Server
 
                 if (messageType == MessageType.GuessingNumber)
                 {
-                    int number = int.Parse(data);
+                    int playerIndex = getIndexOfPlayer(ID);
+                    // 1. get my datetime
+                    var lastSent = lastSentNumber[playerIndex];
 
-                    if (number == generatedNumber)
+                    bool cheated = false;
+                    if (lastSent != DateTime.MinValue)
                     {
-                        for (int i = 0; i < players.Length; i++)
+                        if ((DateTime.Now - lastSent).TotalSeconds < 1)
                         {
-                            if (players[i] == ID)
-                            {
-                                // win
-                                Sessions.SendTo(getMessageType(MessageType.PlayerWon), players[i]);
-                            }
-                            else
-                            {
-                                // loss
-                                Sessions.SendTo(getMessageType(MessageType.PlayerLost), players[i]);
-                            }
+                            cheated = true;
+                            // player is cheating!
+                            Console.WriteLine("Player: " + ID + " is cheating!");
+                            playerWon(players[getIndexOfEnemy(ID)]);
                         }
                     }
-                    else if (number > generatedNumber)
+
+                        lastSentNumber[playerIndex] = DateTime.Now;
+
+                    if (!cheated)
                     {
-                        Sessions.SendTo(getMessageType(MessageType.GoSmaller), ID);
-                    }
-                    else if (number < generatedNumber)
-                    {
-                        Sessions.SendTo(getMessageType(MessageType.GoSmaller), ID);
+                        int number = int.Parse(data);
+
+                        if (number == generatedNumber)
+                        {
+                            playerWon(ID);
+                        }
+                        else if (number > generatedNumber)
+                        {
+                            Sessions.SendTo(getMessageType(MessageType.GoSmaller), ID);
+                        }
+                        else if (number < generatedNumber)
+                        {
+                            Sessions.SendTo(getMessageType(MessageType.GoSmaller), ID);
+                        }
                     }
                 }
                 //base.OnMessage(e);
+            }
+
+            int getIndexOfPlayer(string id)
+            {
+                for (int i = 0; i < players.Length; i++)
+                {
+                    if (id == players[i]) return i;
+                }
+                return -1;
+            }
+
+            int getIndexOfEnemy(string id)
+            {
+                for (int i = 0; i < players.Length; i++)
+                {
+                    if (id != players[i]) return i;
+                }
+                return -1;
+            }
+
+            void playerWon(string id)
+            {
+                for (int i = 0; i < players.Length; i++)
+                {
+                    if (players[i] == id)
+                    {
+                        // win
+                        Sessions.SendTo(getMessageType(MessageType.PlayerWon), players[i]);
+                    }
+                    else
+                    {
+                        // loss
+                        Sessions.SendTo(getMessageType(MessageType.PlayerLost), players[i]);
+                    }
+                }
             }
 
             (MessageType, string data) parsePacket(string packet)
